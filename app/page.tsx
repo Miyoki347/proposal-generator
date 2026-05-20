@@ -1,19 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import ProposalForm from "@/components/ProposalForm";
+import ProposalForm, { type ProposalFormData } from "@/components/ProposalForm";
 import ProposalResult from "@/components/ProposalResult";
-import type { ProposalInput, ProposalOutput, GenerateResponse } from "@/lib/types";
+import ProfilePanel from "@/components/ProfilePanel";
+import { useProfile } from "@/hooks/useProfile";
+import type { ProposalOutput, GenerateResponse, ProposalInput } from "@/lib/types";
 
 export default function Home() {
+  const { profile, updateProfile, isLoaded } = useProfile();
   const [result, setResult] = useState<ProposalOutput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (input: ProposalInput) => {
+  const handleSubmit = async (formData: ProposalFormData) => {
     setLoading(true);
     setError(null);
     setResult(null);
+
+    const input: ProposalInput = { ...formData, profile };
 
     try {
       const res = await fetch("/api/generate", {
@@ -38,23 +43,64 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-lg mx-auto px-4 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">提案文ジェネレーター</h1>
-          <p className="text-sm text-gray-500 mt-1">CrowdWorks・ランサーズ向けの提案文を自動生成します</p>
-        </div>
+    <main className="min-h-screen bg-page">
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{ background: "radial-gradient(ellipse 70% 35% at 50% -5%, rgba(240,164,41,0.08) 0%, transparent 100%)" }}
+      />
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div className="relative max-w-xl mx-auto px-4 py-12 pb-24">
+        {/* Header */}
+        <header className="mb-8" style={{ animation: "fadeInUp 0.5s ease both" }}>
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-0.5 h-4 rounded-full bg-gold" />
+            <span
+              className="font-heading text-[10px] font-semibold tracking-[0.22em] uppercase"
+              style={{ color: "rgba(240,164,41,0.6)" }}
+            >
+              AI Proposal Generator
+            </span>
+          </div>
+          <h1 className="font-heading text-[2rem] font-extrabold text-ink leading-[1.15] tracking-tight">
+            提案文<br />ジェネレーター
+          </h1>
+          <p className="text-[13px] text-dim mt-3 leading-relaxed">
+            案件情報を入れるだけで、CW・ランサーズ向けの<br className="hidden sm:inline" />
+            提案文ドラフトを自動生成します
+          </p>
+        </header>
+
+        {/* Profile Panel */}
+        {isLoaded && (
+          <div className="mb-4" style={{ animation: "fadeInUp 0.5s 0.05s ease both" }}>
+            <ProfilePanel profile={profile} onChange={updateProfile} />
+          </div>
+        )}
+
+        {/* Form card */}
+        <div
+          className="bg-surface border border-line rounded-2xl p-6"
+          style={{ animation: "fadeInUp 0.5s 0.1s ease both" }}
+        >
           <ProposalForm onSubmit={handleSubmit} loading={loading} />
         </div>
 
+        {/* Error */}
         {error && (
-          <div className="mt-4 p-4 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
+          <div
+            className="mt-4 px-4 py-3.5 rounded-xl border text-[13px] leading-relaxed"
+            style={{
+              animation: "fadeInUp 0.4s ease both",
+              background: "rgba(255,107,114,0.08)",
+              borderColor: "rgba(255,107,114,0.2)",
+              color: "#FF6B72",
+            }}
+          >
             {error}
           </div>
         )}
 
+        {/* Result */}
         {result && <ProposalResult result={result} />}
       </div>
     </main>

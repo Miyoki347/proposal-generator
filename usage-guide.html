@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>使い方ガイド — 提案文ジェネレーター</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Noto+Sans+JP:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --page:      #0C0C0E;
+      --surface:   #141418;
+      --surface-2: #1D1D24;
+      --line:      #27272F;
+      --line-h:    #3A3A46;
+      --ink:       #F0EDE6;
+      --dim:       #9898B2;
+      --faint:     #52526A;
+      --gold:      #F0A429;
+      --gold-12:   rgba(240,164,41,0.12);
+      --gold-20:   rgba(240,164,41,0.20);
+      --gold-40:   rgba(240,164,41,0.40);
+      --danger:    #FF6B72;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--page);
+      color: var(--ink);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 20px 100px;
+    }
+
+    /* ── Top gradient ── */
+    .glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse 70% 35% at 50% -5%, rgba(240,164,41,0.07) 0%, transparent 100%);
+      z-index: 0;
+    }
+
+    /* ── Sticky nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(12,12,14,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 20px;
+    }
+    .nav-inner {
+      max-width: 780px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .nav-bar { width: 2px; height: 14px; background: var(--gold); border-radius: 2px; }
+    .nav-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(240,164,41,0.7);
+    }
+    .nav-links {
+      display: flex;
+      gap: 16px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 11px;
+      color: var(--dim);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--ink); }
+
+    /* ── Header ── */
+    header {
+      position: relative;
+      z-index: 1;
+      padding: 64px 0 48px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 56px;
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .header-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+    .header-badge-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(240,164,41,0.6);
+    }
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+    .header-sub {
+      font-size: 14px;
+      color: var(--dim);
+      line-height: 1.9;
+      max-width: 560px;
+    }
+
+    /* ── Section ── */
+    section {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 64px;
+    }
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .section-label-bar { width: 2px; height: 16px; background: var(--gold); border-radius: 2px; flex-shrink: 0; }
+    .section-label h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Step cards ── */
+    .steps { display: flex; flex-direction: column; gap: 12px; }
+    .step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 16px;
+      align-items: start;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .step:hover { border-color: var(--line-h); }
+    .step-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--gold-40);
+      line-height: 1;
+      padding-top: 2px;
+      letter-spacing: -0.03em;
+    }
+    .step-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .step-body { font-size: 13px; color: var(--dim); line-height: 1.85; }
+
+    /* ── Card grid ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px 22px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--line-h); }
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 8px;
+      letter-spacing: 0.01em;
+    }
+    .card-body { font-size: 12px; color: var(--dim); line-height: 1.85; }
+
+    /* ── Highlight card ── */
+    .highlight {
+      background: var(--gold-12);
+      border: 1px solid var(--gold-40);
+      border-radius: 16px;
+      padding: 20px 22px;
+      margin-bottom: 20px;
+    }
+    .highlight-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .highlight-body { font-size: 13px; color: rgba(240,237,230,0.85); line-height: 1.85; }
+
+    /* ── Tag ── */
+    .tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--gold-12);
+      border: 1px solid var(--gold-40);
+      color: var(--gold);
+      margin-right: 4px;
+      margin-bottom: 4px;
+    }
+    .tag-dim {
+      background: var(--surface-2);
+      border-color: var(--line);
+      color: var(--dim);
+    }
+
+    /* ── Platform comparison ── */
+    .platform-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .platform-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+      transition: border-color 0.2s;
+    }
+    .platform-card:hover { border-color: var(--line-h); }
+    .platform-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+    .platform-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .platform-list li {
+      font-size: 12px;
+      color: var(--dim);
+      padding-left: 14px;
+      position: relative;
+      line-height: 1.7;
+    }
+    .platform-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--gold-40);
+    }
+
+    /* ── Preset flow diagram ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .flow-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      transition: border-color 0.2s;
+    }
+    .flow-item:hover { border-color: var(--line-h); }
+    .flow-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--gold-12);
+      border: 1px solid var(--gold-40);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .flow-connector {
+      width: 2px;
+      height: 12px;
+      background: var(--line);
+      margin-left: 27px;
+      border-radius: 1px;
+    }
+    .flow-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+    .flow-desc { font-size: 12px; color: var(--dim); line-height: 1.7; }
+
+    /* ── Tips ── */
+    .tip-list { display: flex; flex-direction: column; gap: 8px; }
+    .tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .tip-icon { color: var(--gold); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .tip-text { font-size: 13px; color: var(--dim); line-height: 1.8; }
+    .tip-text strong { color: var(--ink); font-weight: 600; }
+
+    /* ── Warning ── */
+    .warn {
+      background: rgba(255,107,114,0.07);
+      border: 1px solid rgba(255,107,114,0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 12px;
+      color: rgba(255,107,114,0.85);
+      line-height: 1.8;
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--line);
+      padding: 32px 0;
+      text-align: center;
+    }
+    .footer-text { font-size: 11px; color: var(--faint); letter-spacing: 0.05em; }
+
+    /* ── Responsive ── */
+    @media (max-width: 540px) {
+      .platform-grid { grid-template-columns: 1fr; }
+      .card-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="glow"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-bar"></div>
+      <span class="nav-title">使い方ガイド</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#quickstart">クイックスタート</a></li>
+      <li><a href="#profile">プロフィール</a></li>
+      <li><a href="#presets">スキルセット</a></li>
+      <li><a href="#platforms">プラットフォーム</a></li>
+      <li><a href="#tips">コツ</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="wrapper">
+
+  <header>
+    <div class="header-badge">
+      <div class="header-badge-dot"></div>
+      <span class="header-badge-text">AI Proposal Generator</span>
+    </div>
+    <h1>使い方ガイド</h1>
+    <p class="header-sub">
+      案件情報とプロフィールを入力するだけで、CrowdWorks・ランサーズ向けの提案文ドラフトをAIが自動生成します。このガイドでは各機能の使い方と、より良い提案文を生成するためのコツを解説します。
+    </p>
+  </header>
+
+  <!-- Quick start -->
+  <section id="quickstart">
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <h2>クイックスタート</h2>
+    </div>
+
+    <div class="highlight">
+      <div class="highlight-title">はじめての方へ</div>
+      <div class="highlight-body">初回はまず「プロフィール設定」を完成させてください。名前・職種・スキル・実績が入力されていると、AIがあなたの強みを活かした提案文を生成できます。プロフィールはブラウザに保存されるため、次回以降は入力不要です。</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div>
+          <div class="step-title">プロフィールを設定する</div>
+          <div class="step-body">ページ上部の「プロフィール設定」を開き、名前・職種・経験年数・スキル・実績サマリー・強みを入力します。ポートフォリオも登録しておくと、案件に応じた作品をAIが自動でピックアップして提案に盛り込みます。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div>
+          <div class="step-title">案件情報を入力する</div>
+          <div class="step-body">案件タイトル・概要・予算の3つは必須入力です。「類似実績」は任意ですが、同種の経験がある場合は具体的に記入すると提案の説得力が大幅に上がります。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div>
+          <div class="step-title">プラットフォームとトーンを選ぶ</div>
+          <div class="step-body">応募するプラットフォーム（CrowdWorks / ランサーズ）と提案のトーン（丁寧 / ビジネス / 熱意重視）を選択します。プラットフォームによって文章構成が変わります。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div>
+          <div class="step-title">生成してコピーする</div>
+          <div class="step-body">「提案文を生成する」ボタンを押すと数秒で提案文ドラフトが表示されます。右上の「コピー」ボタンで全文をクリップボードにコピーし、そのまま応募フォームに貼り付けて使えます。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Profile -->
+  <section id="profile">
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <h2>プロフィール設定</h2>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">アカウント名・名前</div>
+        <div class="card-body">提案文の冒頭「はじめまして、〇〇と申します」の部分に使用されます。CW・ランサーズに登録している表示名を入力してください。</div>
+      </div>
+      <div class="card">
+        <div class="card-title">職種・経験年数</div>
+        <div class="card-body">12種類の職種から選択します。選択した職種に合わせてスキルのプリセット候補が切り替わります。経験年数は提案文中で自動的に使用されます。</div>
+      </div>
+      <div class="card">
+        <div class="card-title">スキル</div>
+        <div class="card-body">職種を選ぶとよく使われるスキルが一覧表示されます。該当するものをタップして選択。一覧にないスキルはテキスト入力で追加できます。</div>
+      </div>
+      <div class="card">
+        <div class="card-title">実績サマリー</div>
+        <div class="card-body">「LP制作50件以上、平均評価★4.8」のように具体的な数字を含めると効果的です。提案文の信頼性を高めるために重要な項目です。</div>
+      </div>
+      <div class="card">
+        <div class="card-title">強み・差別化ポイント</div>
+        <div class="card-body">他のフリーランサーとの違いを書きます。「おすすめを見る」ボタンで職種ごとの例文を参照できます。選択するとそのまま入力欄に挿入されます。</div>
+      </div>
+      <div class="card">
+        <div class="card-title">ポートフォリオ</div>
+        <div class="card-body">作品をタイトル・URL・説明・タグで登録します。AIが案件概要と照合し、関連性が高い作品を自動的に選んで提案文に含めます。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Skill presets -->
+  <section id="presets">
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <h2>スキルセットの保存と切り替え</h2>
+    </div>
+
+    <p style="font-size:13px; color:var(--dim); margin-bottom:20px; line-height:1.85;">
+      職種をまたいで仕事を受けている場合、案件のたびに職種・スキル・実績を入力し直す手間を省くために「スキルセット保存」機能を使ってください。
+    </p>
+
+    <div class="flow">
+      <div class="flow-item">
+        <div class="flow-icon">①</div>
+        <div>
+          <div class="flow-label">職種・スキル・実績を設定する</div>
+          <div class="flow-desc">プロフィール設定で、ある案件カテゴリ向けの職種・スキル・実績サマリーを入力します。</div>
+        </div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-item">
+        <div class="flow-icon">②</div>
+        <div>
+          <div class="flow-label">「セットで保存」ボタンを押す</div>
+          <div class="flow-desc">実績サマリーの下にある「+ 現在の職種・スキル・実績をセットで保存」をクリックすると名前入力欄が展開されます。</div>
+        </div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-item">
+        <div class="flow-icon">③</div>
+        <div>
+          <div class="flow-label">セット名をつけて保存</div>
+          <div class="flow-desc">「Webデザイン案件用」「バックエンド案件用」など分かりやすい名前を入力してEnterか保存ボタンを押します。</div>
+        </div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-item">
+        <div class="flow-icon">④</div>
+        <div>
+          <div class="flow-label">次回からチップで切り替え</div>
+          <div class="flow-desc">プロフィール設定の上部に保存済みセットが表示されます。クリックするだけで職種・スキル・実績が一括で切り替わります。× ボタンで削除可能です。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Platform comparison -->
+  <section id="platforms">
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <h2>プラットフォーム別の特徴</h2>
+    </div>
+
+    <p style="font-size:13px; color:var(--dim); margin-bottom:20px; line-height:1.85;">
+      同じ案件でもプラットフォームによって生成される提案文の構成と文体が異なります。応募先に合わせて正しく選択してください。
+    </p>
+
+    <div class="platform-grid">
+      <div class="platform-card">
+        <div class="platform-name">CrowdWorks</div>
+        <ul class="platform-list">
+          <li>「はじめまして、〇〇と申します」から始まる丁寧な書き出し</li>
+          <li>経験・実績を先に提示してから提案内容に入る構成</li>
+          <li>ポートフォリオの具体的な作品名・URLを引用</li>
+          <li>見積もり根拠と納期の説明を明記</li>
+          <li>締めくくりはご検討をお願いするフォーマル表現</li>
+        </ul>
+      </div>
+      <div class="platform-card">
+        <div class="platform-name">ランサーズ</div>
+        <ul class="platform-list">
+          <li>クライアントの課題・悩みへの共感から始まる書き出し</li>
+          <li>「〜でお困りではないでしょうか」の共感フレーズを活用</li>
+          <li>解決策・アプローチを具体的かつ早めに提示</li>
+          <li>実績数字を積極的に前面に出す（件数・評価・達成率）</li>
+          <li>締めくくりは一歩踏み込んだアクション誘導</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <div class="highlight">
+        <div class="highlight-title">トーン別の使い分け</div>
+        <div class="highlight-body">
+          <span class="tag">丁寧</span>初めてのクライアント・高単価案件・専門性の高い案件に。丁寧で信頼感のある文体。<br>
+          <span class="tag">ビジネス</span>継続案件・企業クライアント・要件が明確な案件に。効率的で要点を絞ったプロ向け文体。<br>
+          <span class="tag">熱意重視</span>競争が激しい案件・スタートアップ・自分のやる気をアピールしたい案件に。積極性と情熱が伝わる文体。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tips -->
+  <section id="tips">
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <h2>より良い提案文にするコツ</h2>
+    </div>
+
+    <div class="tip-list">
+      <div class="tip">
+        <div class="tip-icon">◆</div>
+        <div class="tip-text"><strong>案件概要は詳しく書く</strong> — 「Figmaデザインあり」「React実装希望」「商品数20点」など具体的な条件を入力するほど、的外れな提案文になりにくくなります。クライアントの案件説明文をそのままコピペするのが手早くて効果的です。</div>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">◆</div>
+        <div class="tip-text"><strong>実績サマリーには数字を入れる</strong> — 「多数」よりも「50件以上」、「高評価」よりも「★4.8」の方がAIが信頼性の高い文章を生成します。架空の数字はNGですが、実際の実績はなるべく数字で表現してください。</div>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">◆</div>
+        <div class="tip-text"><strong>類似実績を活用する</strong> — 「同種のLP制作を3件担当」のように、その案件に近い実績を具体的に書くと提案の説得力が大きく上がります。必須ではありませんが記入を強くおすすめします。</div>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">◆</div>
+        <div class="tip-text"><strong>ポートフォリオはタグを充実させる</strong> — ポートフォリオ登録時にタグを多めにつけておくと、AIがより精度高く関連作品を選べます。「LP制作」「React」「EC」のように具体的なキーワードを入れてください。</div>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">◆</div>
+        <div class="tip-text"><strong>生成後は必ず一読して調整する</strong> — AIのドラフトはあくまで出発点です。金額・納期・固有名詞などを案件の実際の内容に合わせて修正してから応募しましょう。そのまま使うより手を加えた方が採択率は上がります。</div>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">◆</div>
+        <div class="tip-text"><strong>スキルは選びすぎない</strong> — 全スキルを選択するより、その案件に直接関係するスキルだけを選んだ状態で生成する方が焦点の絞れた提案文になります。スキルセットの切り替え機能を活用してください。</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div class="warn">
+        生成される提案文はドラフトです。実際の応募前に必ず内容を確認し、架空の実績・誇張表現がないかチェックしてください。虚偽の実績記載はプラットフォームの規約違反になります。
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrapper">
+    <p class="footer-text">AI Proposal Generator — Usage Guide</p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,37 +1,20 @@
-import { generateWithGemini } from "./gemini";
 import { generateWithClaude } from "./claude";
+import { generateWithGemini } from "./gemini";
 import { buildPrompt } from "./prompts";
 import type { ProposalInput, ProposalOutput } from "./types";
 
 async function generate(prompt: string): Promise<{ text: string; model: string }> {
   try {
-    const text = await generateWithGemini(prompt);
-    return { text, model: "gemini-1.5-flash" };
-  } catch (e) {
-    console.warn("Gemini failed, falling back to Claude:", e);
     const text = await generateWithClaude(prompt);
-    return { text, model: "claude-haiku (fallback)" };
+    return { text, model: "claude-haiku-4-5" };
+  } catch (e) {
+    console.warn("Claude failed, falling back to Gemini:", e);
+    const text = await generateWithGemini(prompt);
+    return { text, model: "gemini-2.0-flash (fallback)" };
   }
 }
 
 export async function generateProposal(input: ProposalInput): Promise<ProposalOutput> {
-  const { platform } = input;
-
-  if (platform === "both") {
-    const [cw, lc] = await Promise.all([
-      generate(buildPrompt(input, "crowdworks")),
-      generate(buildPrompt(input, "lancers")),
-    ]);
-    return {
-      crowdworks: cw.text,
-      lancers: lc.text,
-      model: cw.model,
-    };
-  }
-
-  const result = await generate(buildPrompt(input, platform));
-  return {
-    ...(platform === "crowdworks" ? { crowdworks: result.text } : { lancers: result.text }),
-    model: result.model,
-  };
+  const result = await generate(buildPrompt(input, input.platform));
+  return { text: result.text, model: result.model };
 }

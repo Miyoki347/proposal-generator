@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CLAUDE.html — 提案文ジェネレーター 仕様・ルール</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Noto+Sans+JP:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --page:      #0C0C0E;
+      --surface:   #141418;
+      --surface-2: #1D1D24;
+      --line:      #27272F;
+      --line-h:    #3A3A46;
+      --ink:       #F0EDE6;
+      --dim:       #9898B2;
+      --faint:     #52526A;
+      --gold:      #F0A429;
+      --gold-08:   rgba(240,164,41,0.08);
+      --gold-12:   rgba(240,164,41,0.12);
+      --gold-20:   rgba(240,164,41,0.20);
+      --gold-40:   rgba(240,164,41,0.40);
+      --gold-60:   rgba(240,164,41,0.60);
+      --danger:    #FF6B72;
+      --success:   #4ADE80;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--page);
+      color: var(--ink);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse 60% 30% at 50% -5%, rgba(240,164,41,0.06) 0%, transparent 100%);
+      z-index: 0;
+    }
+
+    /* ── Sidebar layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 100vh;
+    }
+
+    aside {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 220px;
+      height: 100vh;
+      overflow-y: auto;
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+      padding: 28px 0;
+      z-index: 10;
+    }
+    .aside-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 20px 24px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 20px;
+    }
+    .aside-bar { width: 2px; height: 14px; background: var(--gold); border-radius: 2px; }
+    .aside-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold-60);
+    }
+    .aside-section {
+      padding: 0 16px;
+      margin-bottom: 20px;
+    }
+    .aside-section-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--faint);
+      padding: 0 4px;
+      margin-bottom: 6px;
+    }
+    .aside-nav { list-style: none; display: flex; flex-direction: column; gap: 1px; }
+    .aside-nav a {
+      display: block;
+      font-size: 12px;
+      color: var(--dim);
+      text-decoration: none;
+      padding: 6px 8px;
+      border-radius: 8px;
+      transition: all 0.15s;
+      line-height: 1.4;
+    }
+    .aside-nav a:hover {
+      background: var(--surface-2);
+      color: var(--ink);
+    }
+
+    /* ── Main ── */
+    main {
+      margin-left: 220px;
+      padding: 0 48px 100px;
+      max-width: calc(220px + 780px);
+    }
+
+    /* ── Header ── */
+    header {
+      position: relative;
+      z-index: 1;
+      padding: 56px 0 44px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 56px;
+    }
+    .header-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .header-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+    .header-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold-60);
+    }
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+    .header-sub {
+      font-size: 13px;
+      color: var(--dim);
+      line-height: 1.9;
+      max-width: 560px;
+    }
+    .header-meta {
+      display: flex;
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .meta-item {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--faint);
+    }
+    .meta-item span { color: var(--dim); }
+
+    /* ── Section ── */
+    section {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 60px;
+      scroll-margin-top: 24px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .section-bar { width: 2px; height: 16px; background: var(--gold); border-radius: 2px; flex-shrink: 0; }
+    .section-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+    .section-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--faint);
+      margin-left: auto;
+    }
+
+    /* ── Subsection ── */
+    .subsection { margin-bottom: 28px; }
+    .subsection-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 12px;
+    }
+
+    /* ── Prose ── */
+    .prose { font-size: 13px; color: var(--dim); line-height: 1.9; margin-bottom: 14px; }
+    .prose strong { color: var(--ink); font-weight: 600; }
+
+    /* ── Rule list ── */
+    .rule-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .rule {
+      display: flex;
+      gap: 12px;
+      padding: 13px 16px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      transition: border-color 0.2s;
+    }
+    .rule:hover { border-color: var(--line-h); }
+    .rule-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--gold-60);
+      flex-shrink: 0;
+      padding-top: 2px;
+      min-width: 20px;
+    }
+    .rule-body { font-size: 13px; color: var(--dim); line-height: 1.8; }
+    .rule-body strong { color: var(--ink); font-weight: 600; }
+
+    /* ── Code block ── */
+    .code-block {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .code-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--faint);
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+    pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--dim);
+      padding: 16px;
+      overflow-x: auto;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    .kw { color: var(--gold); }
+    .str { color: #7EC8A4; }
+    .cm { color: var(--faint); font-style: italic; }
+
+    /* ── Key-value table ── */
+    .kv-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-bottom: 14px;
+    }
+    .kv-table th {
+      text-align: left;
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--faint);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .kv-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      color: var(--dim);
+      vertical-align: top;
+      line-height: 1.7;
+    }
+    .kv-table tr:last-child td { border-bottom: none; }
+    .kv-table tr:hover td { background: var(--surface-2); }
+    .kv-table td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--gold-60);
+      white-space: nowrap;
+      width: 160px;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 5px;
+      margin-right: 4px;
+    }
+    .badge-gold { background: var(--gold-12); border: 1px solid var(--gold-40); color: var(--gold); }
+    .badge-dim  { background: var(--surface-2); border: 1px solid var(--line); color: var(--dim); }
+    .badge-ok   { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); color: var(--success); }
+    .badge-ng   { background: rgba(255,107,114,0.08); border: 1px solid rgba(255,107,114,0.25); color: var(--danger); }
+
+    /* ── Callout ── */
+    .callout {
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      line-height: 1.85;
+    }
+    .callout-gold {
+      background: var(--gold-08);
+      border: 1px solid var(--gold-40);
+      color: rgba(240,237,230,0.85);
+    }
+    .callout-danger {
+      background: rgba(255,107,114,0.07);
+      border: 1px solid rgba(255,107,114,0.2);
+      color: rgba(255,107,114,0.85);
+    }
+    .callout-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .callout-gold .callout-label { color: var(--gold); }
+    .callout-danger .callout-label { color: var(--danger); }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 28px 0;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-left: 220px;
+      border-top: 1px solid var(--line);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-text { font-size: 11px; color: var(--faint); font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Responsive ── */
+    @media (max-width: 720px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { display: none; }
+      main { margin-left: 0; padding: 0 20px 80px; }
+      footer { margin-left: 0; padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="glow"></div>
+
+<div class="layout">
+
+  <aside>
+    <div class="aside-logo">
+      <div class="aside-bar"></div>
+      <span class="aside-title">CLAUDE.html</span>
+    </div>
+
+    <div class="aside-section">
+      <div class="aside-section-label">概要</div>
+      <ul class="aside-nav">
+        <li><a href="#overview">プロジェクト概要</a></li>
+        <li><a href="#stack">技術スタック</a></li>
+        <li><a href="#data">データ構造</a></li>
+      </ul>
+    </div>
+
+    <div class="aside-section">
+      <div class="aside-section-label">生成ルール</div>
+      <ul class="aside-nav">
+        <li><a href="#generation">生成の基本方針</a></li>
+        <li><a href="#platforms">プラットフォーム別構成</a></li>
+        <li><a href="#tones">トーン定義</a></li>
+        <li><a href="#profile-usage">プロフィールの活用</a></li>
+      </ul>
+    </div>
+
+    <div class="aside-section">
+      <div class="aside-section-label">品質基準</div>
+      <ul class="aside-nav">
+        <li><a href="#quality">品質チェック項目</a></li>
+        <li><a href="#ng">NGパターン</a></li>
+        <li><a href="#api">API構成</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main>
+
+    <header>
+      <div class="header-eyebrow">
+        <div class="header-dot"></div>
+        <span class="header-label">Reference Document</span>
+      </div>
+      <h1>CLAUDE.html</h1>
+      <p class="header-sub">
+        提案文ジェネレーターの概要・仕様・生成ルールをまとめた参照ドキュメントです。AIへの指示方針、プロンプト設計の根拠、品質基準を記載しています。
+      </p>
+      <div class="header-meta">
+        <span class="meta-item">project: <span>proposal-generator</span></span>
+        <span class="meta-item">platform: <span>CrowdWorks / Lancers</span></span>
+        <span class="meta-item">model: <span>claude-haiku-4-5</span></span>
+      </div>
+    </header>
+
+    <!-- Overview -->
+    <section id="overview">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>プロジェクト概要</h2>
+        <span class="section-id">#overview</span>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">目的</div>
+        <p class="prose">
+          日本のクラウドソーシングプラットフォーム（CrowdWorks・ランサーズ）向けの提案文ドラフトをAIが自動生成するツール。フリーランサーが案件に応募する際の提案文作成の手間を削減し、プロフィール情報を活かした説得力のある文章を迅速に生成することを目的とする。
+        </p>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">対象ユーザー</div>
+        <p class="prose">
+          CrowdWorks・ランサーズで案件受注を行うフリーランサー。職種は問わないが、初期実装ではWebエンジニア・デザイナー・ライター・マーケターなど12職種のプリセットを用意している。
+        </p>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">将来の展開</div>
+        <p class="prose">
+          現在は個人利用の無料ツール。将来的にはFirebase App Hostingで有料SaaSとして展開予定。Vercel（テスト）→ Firebase（本番）の二段構成でデプロイ。
+        </p>
+      </div>
+    </section>
+
+    <!-- Stack -->
+    <section id="stack">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>技術スタック</h2>
+        <span class="section-id">#stack</span>
+      </div>
+
+      <table class="kv-table">
+        <thead>
+          <tr>
+            <th>カテゴリ</th>
+            <th>技術・ライブラリ</th>
+            <th>備考</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>framework</td>
+            <td>Next.js 14 App Router</td>
+            <td>Firebase互換のため Vercel固有機能は使わない</td>
+          </tr>
+          <tr>
+            <td>language</td>
+            <td>TypeScript</td>
+            <td>any禁止、型は明示する</td>
+          </tr>
+          <tr>
+            <td>styling</td>
+            <td>Tailwind CSS v4</td>
+            <td>@theme でデザイントークン定義、opacity modifier使用</td>
+          </tr>
+          <tr>
+            <td>ai-primary</td>
+            <td>Claude API (claude-haiku-4-5-20251001)</td>
+            <td>Anthropic SDK使用、サーバーサイドのみ</td>
+          </tr>
+          <tr>
+            <td>ai-fallback</td>
+            <td>Gemini API (gemini-2.0-flash)</td>
+            <td>日本の無料枠では limit:0 のため現状フォールバック専用</td>
+          </tr>
+          <tr>
+            <td>persistence</td>
+            <td>localStorage</td>
+            <td>キー: pg_profile_v1、SSRミスマッチ防止のため mount後に読み込み</td>
+          </tr>
+          <tr>
+            <td>fonts</td>
+            <td>Syne / Noto Sans JP</td>
+            <td>Syne=見出し(font-heading)、Noto=本文(font-body)</td>
+          </tr>
+          <tr>
+            <td>deploy-test</td>
+            <td>Vercel</td>
+            <td>環境変数は Vercel Dashboard で設定</td>
+          </tr>
+          <tr>
+            <td>deploy-prod</td>
+            <td>Firebase App Hosting</td>
+            <td>将来の有料版向け。apphosting.yaml で管理</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-danger">
+        <div class="callout-label">重要</div>
+        APIキー（ANTHROPIC_API_KEY, GEMINI_API_KEY）は .env.local に格納し、.gitignore で除外済み。絶対にコミットしない。サーバーサイド（app/api/）でのみ参照すること。
+      </div>
+    </section>
+
+    <!-- Data structure -->
+    <section id="data">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>データ構造</h2>
+        <span class="section-id">#data</span>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">UserProfile</div>
+        <div class="code-block">
+          <div class="code-label">lib/types.ts</div>
+          <pre><span class="kw">interface</span> UserProfile {
+  name:               <span class="str">string</span>;   <span class="cm">// 提案文の名乗りに使用</span>
+  jobType:            <span class="str">string</span>;   <span class="cm">// JOB_TYPES[].value と対応</span>
+  experienceYears:    <span class="str">string</span>;   <span class="cm">// EXPERIENCE_YEARS[].value と対応</span>
+  skills:             <span class="str">string[]</span>; <span class="cm">// 選択済みスキルの配列</span>
+  achievementSummary: <span class="str">string</span>;   <span class="cm">// 実績サマリー（数字を含む文章）</span>
+  strengths:          <span class="str">string</span>;   <span class="cm">// 強み・差別化ポイント</span>
+  portfolio:          <span class="str">PortfolioItem[]</span>;
+  skillPresets:       <span class="str">SkillPreset[]</span>; <span class="cm">// 保存済みスキルセット</span>
+}
+
+<span class="kw">interface</span> PortfolioItem {
+  id:          <span class="str">string</span>;
+  title:       <span class="str">string</span>;
+  url?:        <span class="str">string</span>;
+  description: <span class="str">string</span>;
+  tags:        <span class="str">string[]</span>; <span class="cm">// AI選定に使うキーワード</span>
+}
+
+<span class="kw">interface</span> SkillPreset {
+  id:                 <span class="str">string</span>;   <span class="cm">// Date.now().toString()</span>
+  nickname:           <span class="str">string</span>;   <span class="cm">// ユーザーが付けた名前</span>
+  jobType:            <span class="str">string</span>;
+  experienceYears:    <span class="str">string</span>;
+  skills:             <span class="str">string[]</span>;
+  achievementSummary: <span class="str">string</span>;
+}</pre>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">ProposalInput（API への送信データ）</div>
+        <div class="code-block">
+          <div class="code-label">lib/types.ts</div>
+          <pre><span class="kw">interface</span> ProposalInput {
+  title:            <span class="str">string</span>;          <span class="cm">// 案件タイトル（必須）</span>
+  overview:         <span class="str">string</span>;          <span class="cm">// 案件概要（必須）</span>
+  budget:           <span class="str">string</span>;          <span class="cm">// 予算（必須）</span>
+  platform:         <span class="str">"crowdworks" | "lancers"</span>;
+  tone:             <span class="str">"polite" | "business" | "passionate"</span>;
+  similarExperience?: <span class="str">string</span>;        <span class="cm">// 任意。あると精度が上がる</span>
+  profile:          <span class="str">UserProfile</span>;
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Generation rules -->
+    <section id="generation">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>生成の基本方針</h2>
+        <span class="section-id">#generation</span>
+      </div>
+
+      <div class="rule-list">
+        <div class="rule">
+          <div class="rule-num">R-01</div>
+          <div class="rule-body"><strong>数字を必ず含める</strong> — 実績や経験を語るとき、入力された数字（件数・評価・年数・達成率）を具体的に文中に盛り込む。「多数の実績があります」は NG。</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">R-02</div>
+          <div class="rule-body"><strong>案件の課題に言及する</strong> — 案件概要を読み解き、クライアントが解決したい課題・ゴールを自分の言葉で言い換えた上で、自分がそれを解決できる根拠を示す。</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">R-03</div>
+          <div class="rule-body"><strong>ポートフォリオは案件関連のものだけ選ぶ</strong> — 全作品を列挙せず、案件のタグ・キーワードと合致するものだけを引用する。最大3件まで。</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">R-04</div>
+          <div class="rule-body"><strong>強みは差別化として機能させる</strong> — 「丁寧に対応します」「コミュニケーションを大切にします」のような凡庸な表現は避け、profile.strengths の具体内容をそのまま活用する。</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">R-05</div>
+          <div class="rule-body"><strong>類似実績は冒頭近くに配置する</strong> — similarExperience が入力されている場合、それを証拠として早めに提示する。信頼性の確立は提案文の前半で行う。</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">R-06</div>
+          <div class="rule-body"><strong>文字数は400〜600字を目安にする</strong> — 長すぎる提案は読まれない。簡潔に核心を伝える。ポートフォリオ引用を含めても700字以内を上限とする。</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">R-07</div>
+          <div class="rule-body"><strong>架空の情報を生成しない</strong> — 入力されていない実績・スキル・URLは生成してはならない。不足している情報があれば省略するか一般的な表現にとどめる。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform rules -->
+    <section id="platforms">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>プラットフォーム別の提案構成</h2>
+        <span class="section-id">#platforms</span>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">CrowdWorks</div>
+        <div class="rule-list">
+          <div class="rule">
+            <div class="rule-num">CW-1</div>
+            <div class="rule-body"><strong>書き出し</strong>：「はじめまして、{name} と申します。」から始める。名前が未設定の場合は「はじめまして。」</div>
+          </div>
+          <div class="rule">
+            <div class="rule-num">CW-2</div>
+            <div class="rule-body"><strong>構成順</strong>：自己紹介（職種・経験年数）→ 実績・スキル証明 → ポートフォリオ引用 → 本案件への対応方針 → 納期・見積もり言及 → 締め</div>
+          </div>
+          <div class="rule">
+            <div class="rule-num">CW-3</div>
+            <div class="rule-body"><strong>文体</strong>：敬語（です・ます調）を基本とする。砕けすぎず、フォーマル寄りの文体。</div>
+          </div>
+          <div class="rule">
+            <div class="rule-num">CW-4</div>
+            <div class="rule-body"><strong>締め</strong>：「ご検討のほど、よろしくお願いいたします。」など、控えめに検討を促す表現で終わる。</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="subsection">
+        <div class="subsection-title">ランサーズ</div>
+        <div class="rule-list">
+          <div class="rule">
+            <div class="rule-num">LC-1</div>
+            <div class="rule-body"><strong>書き出し</strong>：クライアントの悩みや課題への共感から入る。例：「〜でお困りではないでしょうか。」「〜を実現したいというご要望、拝見しました。」</div>
+          </div>
+          <div class="rule">
+            <div class="rule-num">LC-2</div>
+            <div class="rule-body"><strong>構成順</strong>：共感フレーズ → 解決策の提示 → 自分が解決できる根拠（実績・スキル） → ポートフォリオ引用 → 具体的なアプローチ → 次のアクション促し</div>
+          </div>
+          <div class="rule">
+            <div class="rule-num">LC-3</div>
+            <div class="rule-body"><strong>実績の見せ方</strong>：数字を積極的に前面に出す。「〇件の実績」「評価 ★4.8」「納期遵守率100%」のように冒頭近くで提示する。</div>
+          </div>
+          <div class="rule">
+            <div class="rule-num">LC-4</div>
+            <div class="rule-body"><strong>締め</strong>：「ぜひ一度ご相談ください。」「まずはご要件をお聞かせいただければと思います。」など、次のアクションを促す積極的な表現で終わる。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tones -->
+    <section id="tones">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>トーン定義</h2>
+        <span class="section-id">#tones</span>
+      </div>
+
+      <table class="kv-table">
+        <thead>
+          <tr>
+            <th>トーン値</th>
+            <th>説明</th>
+            <th>向いているケース</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>polite</td>
+            <td>丁寧語・敬語を徹底。信頼感と誠実さを前面に出す文体。感情表現は控えめ。</td>
+            <td>初めてのクライアント、高単価案件、専門性重視の案件</td>
+          </tr>
+          <tr>
+            <td>business</td>
+            <td>要点を絞ったプロフェッショナルな文体。回りくどい表現を省き、価値を端的に伝える。</td>
+            <td>企業クライアント、継続案件、要件が明確な案件</td>
+          </tr>
+          <tr>
+            <td>passionate</td>
+            <td>熱意・やる気・この案件をやりたいという気持ちを前面に出す。感情的な言葉を適切に使う。</td>
+            <td>競争が激しい案件、スタートアップ、実績より意欲を見る案件</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-gold">
+        <div class="callout-label">実装上の注意</div>
+        トーンはプロンプト内で文体指示として渡す。「丁寧」= 敬語徹底・感情控えめ、「ビジネス」= 簡潔・価値提示優先、「熱意重視」= 積極的表現・気持ちを言語化。プラットフォームとトーンの組み合わせで合計6パターンの文体バリエーションが生まれる。
+      </div>
+    </section>
+
+    <!-- Profile usage -->
+    <section id="profile-usage">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>プロフィール情報の活用方針</h2>
+        <span class="section-id">#profile-usage</span>
+      </div>
+
+      <table class="kv-table">
+        <thead>
+          <tr>
+            <th>フィールド</th>
+            <th>プロンプトでの使われ方</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>name</td>
+            <td>CWの書き出し「はじめまして、〇〇と申します」に使用。未設定時は名乗り省略。</td>
+          </tr>
+          <tr>
+            <td>jobType + experienceYears</td>
+            <td>「〇〇として〇年の経験を持つ」という実績の根拠として使用。</td>
+          </tr>
+          <tr>
+            <td>skills</td>
+            <td>案件に直接関係するスキルのみを抽出して言及する。全スキルを列挙しない。</td>
+          </tr>
+          <tr>
+            <td>achievementSummary</td>
+            <td>信頼性の証拠として、特に数字部分を強調して提案文に組み込む。</td>
+          </tr>
+          <tr>
+            <td>strengths</td>
+            <td>競合フリーランサーとの差別化として、提案の後半〜締め前に配置する。</td>
+          </tr>
+          <tr>
+            <td>portfolio</td>
+            <td>タグと案件概要を照合し、関連度の高い作品を最大3件ピックアップして引用する。URLが設定されている場合は記載する。</td>
+          </tr>
+          <tr>
+            <td>similarExperience</td>
+            <td>「同種の実績があること」の証拠として、早い段階（2〜3文目）で明示する。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Quality -->
+    <section id="quality">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>品質チェック項目</h2>
+        <span class="section-id">#quality</span>
+      </div>
+
+      <div class="rule-list">
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ok">OK</span></div>
+          <div class="rule-body">案件タイトルまたは概要のキーワードが提案文中に自然な形で盛り込まれている</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ok">OK</span></div>
+          <div class="rule-body">実績・経験を裏付ける具体的な数字が1つ以上含まれている</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ok">OK</span></div>
+          <div class="rule-body">選択したプラットフォームの構成ルールに沿った文章になっている</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ok">OK</span></div>
+          <div class="rule-body">ポートフォリオを引用する場合、案件と関係ない作品は含まれていない</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ok">OK</span></div>
+          <div class="rule-body">文字数が400〜700字の範囲に収まっている</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ok">OK</span></div>
+          <div class="rule-body">選択されたトーンに合った文体・語尾で統一されている</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NG patterns -->
+    <section id="ng">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>NGパターン</h2>
+        <span class="section-id">#ng</span>
+      </div>
+
+      <div class="rule-list">
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ng">NG</span></div>
+          <div class="rule-body">「多数の実績があります」「豊富な経験」など、数字を使わない曖昧な実績表現</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ng">NG</span></div>
+          <div class="rule-body">「丁寧に対応します」「コミュニケーションを大切にします」のような汎用的な差別化表現</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ng">NG</span></div>
+          <div class="rule-body">入力されていないURL・会社名・プロジェクト名の捏造</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ng">NG</span></div>
+          <div class="rule-body">案件内容とまったく関係ないポートフォリオの引用</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ng">NG</span></div>
+          <div class="rule-body">スキルの全列挙（関係しないスキルを全部並べる）</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ng">NG</span></div>
+          <div class="rule-body">800字を超える長文。提案文は簡潔さが重要。</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num"><span class="badge badge-ng">NG</span></div>
+          <div class="rule-body">「最高の提案ができます」「他の誰よりも優れています」などの根拠のない誇大表現</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- API structure -->
+    <section id="api">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <h2>API構成</h2>
+        <span class="section-id">#api</span>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">リクエストフロー</div>
+        <div class="code-block">
+          <div class="code-label">app/api/generate/route.ts</div>
+          <pre><span class="cm">// クライアント → POST /api/generate → プロンプト生成 → Claude API</span>
+<span class="cm">// → (失敗時) Gemini API → レスポンス返却</span>
+
+POST /api/generate
+  body: ProposalInput (JSON)
+  → buildPrompt(input)         <span class="cm">// lib/prompts.ts</span>
+  → generateWithClaude(prompt) <span class="cm">// lib/claude.ts</span>
+    ↳ FAIL → generateWithGemini(prompt) <span class="cm">// lib/gemini.ts</span>
+  → GenerateResponse { success, data: { text, model } }</pre>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-title">モデル設定</div>
+        <table class="kv-table">
+          <thead>
+            <tr><th>役割</th><th>モデルID</th><th>状態</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>primary</td>
+              <td>claude-haiku-4-5-20251001</td>
+              <td><span class="badge badge-ok">稼働中</span></td>
+            </tr>
+            <tr>
+              <td>fallback</td>
+              <td>gemini-2.0-flash</td>
+              <td><span class="badge badge-dim">日本では無料枠 limit:0</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-gold">
+        <div class="callout-label">環境変数</div>
+        <strong>ANTHROPIC_API_KEY</strong> — Claude API キー（console.anthropic.com で取得）<br>
+        <strong>GEMINI_API_KEY</strong> — Gemini API キー（Google AI Studio で取得）<br>
+        いずれも .env.local に記載し、サーバーサイドのみで使用する。クライアントコンポーネントから直接参照しない。
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <span class="footer-text">CLAUDE.html — proposal-generator reference</span>
+  <span class="footer-text">AI Proposal Generator</span>
+</footer>
+
+</body>
+</html>
